@@ -250,7 +250,10 @@ class DemosArgParser(YowArgParser):
 
         echoOpts = self.add_argument_group("Echo client demo")
         echoOpts.add_argument('-e', '--echo', action = "store_true", help = "Start the Yowsup Echo client")
-
+#copy of echo
+        appointmentsOpts = self.add_argument_group("appointments client demo")
+        appointmentsOpts.add_argument('-a', '--appointments', action = "store_true", help = "Start the Yowsup Appointments client")
+#end of copy 
         sendOpts = self.add_argument_group("Send client demo")
         sendOpts.add_argument('-s', '--send', action="store", help = "Send a message to specified phone number, "
                                                                      "wait for server receipt and exit",
@@ -268,6 +271,8 @@ class DemosArgParser(YowArgParser):
             self.startCmdline()
         elif self.args["echo"]:
             self.startEcho()
+        elif self.args["appointments"]: #copied from echo
+            self.startAppointments()    #end of copy
         elif self.args["send"]:
             self.startSendClient()
         elif self.args["sync"]:
@@ -309,6 +314,22 @@ class DemosArgParser(YowArgParser):
         except KeyboardInterrupt:
             print("\nYowsdown")
             sys.exit(0)
+	    
+# copied from echoclient
+    def startAppointments(self):
+        from yowsup.demos import appointments 
+        credentials = self._getCredentials()
+        if not credentials:
+            print("Error: You must specify a configuration method")
+            sys.exit(1)
+        try:
+            self.printInfoText()
+            stack = appointments.YowsupAppointmentsStack(credentials, not self.args["unmoxie"])
+            stack.start()
+        except KeyboardInterrupt:
+            print("\nYowsdown")
+            sys.exit(0)
+#end of copy
 
     def startSendClient(self):
         from yowsup.demos import sendclient
