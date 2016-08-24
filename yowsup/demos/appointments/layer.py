@@ -11,6 +11,7 @@ import time
 import json
 import sqlite3 # Cambiarlo de lugar para que sea mas óptimo (quizás mas arriba)
 from yowsup.layers.protocol_chatstate.protocolentities   import *
+from dbapi import *
 
 # Por ahora no lo agrego
 # Para dar órdenes usando https://github.com/nate-parrott/commanding 
@@ -33,8 +34,8 @@ class AppointmentsLayer(YowInterfaceLayer):
             self.onMediaMessage(messageProtocolEntity)
 #This was the original echo:
 #        self.toLower(messageProtocolEntity.forward(messageProtocolEntity.getFrom()))
-#        self.toLower(messageProtocolEntity.ack())
-#        self.toLower(messageProtocolEntity.ack(True))
+        self.toLower(messageProtocolEntity.ack())
+        self.toLower(messageProtocolEntity.ack(True))
 #end of commented code
 
 
@@ -43,10 +44,6 @@ class AppointmentsLayer(YowInterfaceLayer):
         print("Entra al receipt de :")
 	print str(entity._id) # It seems to be a short usage of: entity.getId()
 	print(json.dumps(entity,default=jdefault))
-#	print str(entity._from) # It seems to be a short usage of: entity.getId()
-#	print str(dir(entity.getType()))
-#	print str(dir(entity.getTag()))
-#	print str(entity.getType())
 	## Log receipt and read
 	if entity.getType()==None: #Could be better than this, but I needed the "receipt" text to appear instead of "None"
 		mstate="receipt"
@@ -61,6 +58,7 @@ class AppointmentsLayer(YowInterfaceLayer):
         self.toLower(entity.ack())
 
 
+
 # Text message received, need special treatment:
     def onTextMessage(self,messageProtocolEntity):
         # just print info
@@ -71,7 +69,6 @@ class AppointmentsLayer(YowInterfaceLayer):
         except AttributeError as e:
 	   print(e)
 	   print("Vamo laj bandaaaa!")
-	   
 	logFileName = messageProtocolEntity.getFrom(False).encode('utf-8')+".log"
 # Abro/creo archivo para loguear conversación basado en número de celular
         try:
@@ -194,7 +191,9 @@ class AppointmentsLayer(YowInterfaceLayer):
 
         elif messageProtocolEntity.getMediaType() == "vcard":
 	    contactName=messageProtocolEntity.getName().encode('utf-8')
-	    vcardData=messageProtocolEntity.getCardData().encode('utf-8')
+            vcardData=messageProtocolEntity.getCardData()
+            print("Voy a crear una vcard   ... {}".format(vcardData.encode('utf-8')))
+            createUserRegisterFromVCard('test.db',vcardData)
 	    numero=messageProtocolEntity.getFrom(False).encode('utf-8')
 	    print(dir(messageProtocolEntity))
 #	    print(messageProtocolEntity.getParticipant())
@@ -202,7 +201,7 @@ class AppointmentsLayer(YowInterfaceLayer):
 #	    print(messageProtocolEntity.getNotify())
 #            print("Haciendo Eco de vcard (%s, %s) to %s" % (contactName, vcardData, numero)))
 	    with open('contactos.txt','a') as file:
-		    file.write("\n"+numero+","+contactName+","+vcardData)
+		    file.write("\n"+numero+","+contactName+","+vcardData.encode('utf-8'))
 
 
 
