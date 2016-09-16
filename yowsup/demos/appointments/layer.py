@@ -12,6 +12,7 @@ import json
 import sqlite3 # Cambiarlo de lugar para que sea mas óptimo (quizás mas arriba)
 from yowsup.layers.protocol_chatstate.protocolentities   import *
 from dbapi import *
+from manager import ManageAppointments
 
 # Por ahora no lo agrego
 # Para dar órdenes usando https://github.com/nate-parrott/commanding 
@@ -20,7 +21,6 @@ from dbapi import *
 def jdefault(o):
 	return o.__dict__
 
-#db = sqlite3.connect('j1rn4s10')
 class AppointmentsLayer(YowInterfaceLayer):
 
     @ProtocolEntityCallback("message")
@@ -65,6 +65,8 @@ class AppointmentsLayer(YowInterfaceLayer):
 	try:
 	   mensajeEnUTF = messageProtocolEntity.getBody().encode('utf-8')
 	   print("Repitiendo %s to %s" % (mensajeEnUTF, messageProtocolEntity.getFrom(False)))
+	   mad = ManageAppointments(messageProtocolEntity.getFrom(False))
+	   print("Ud. es un {} de {}".format(mad.accountType,mad.activity))
 	   return mensajeEnUTF
         except AttributeError as e:
 	   print(e)
