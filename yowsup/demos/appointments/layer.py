@@ -13,7 +13,6 @@ import sqlite3 # Cambiarlo de lugar para que sea mas óptimo (quizás mas arriba
 from yowsup.layers.protocol_chatstate.protocolentities   import *
 from dbapi import *
 from manager import ManageAppointments
-
 # Por ahora no lo agrego
 # Para dar órdenes usando https://github.com/nate-parrott/commanding 
 #from commanding import Phrase, parse_phrase 
@@ -22,21 +21,71 @@ def jdefault(o):
 	return o.__dict__
 
 class AppointmentsLayer(YowInterfaceLayer):
-
+ 
     @ProtocolEntityCallback("message")
     def onMessage(self, messageProtocolEntity):
 
+	fileName = messageProtocolEntity.getFrom(False).encode('utf-8')
+        logFileName = fileName+".log"
+        messagesFileName = fileName+".messages"
+        with open(messagesFileName, "r") as file:                            
+            messagesBuffer = file.readlines()                                     
+                                                                    
+	messagesBuffer = map(lambda pl: pl.rstrip('\n').split(','),messagesBuffer)    
+	# TODO:test if file is biger than 50 lines and drop the oldest massages to
+	#       to avoid the file grow too big.
+
         if messageProtocolEntity.getType() == 'text':
+            mensajeTexto = ""
             mensajeTexto = self.onTextMessage(messageProtocolEntity)
 	    print("volvioooo")
         elif messageProtocolEntity.getType() == 'media':
 #            mensajeTexto = self.onTextMessage(messageProtocolEntity)
+            mensajeTexto = "Nothing defined for media yet..."
             self.onMediaMessage(messageProtocolEntity)
 #This was the original echo:
 #        self.toLower(messageProtocolEntity.forward(messageProtocolEntity.getFrom()))
         self.toLower(messageProtocolEntity.ack())
         self.toLower(messageProtocolEntity.ack(True))
 #end of commented code
+# Leo el mensaje en una variable
+
+	respuesta = mensajeTexto
+	# De alguna forma tengo que buscar su último mje..."
+	#Cuando es admin:
+        print("Va a checar si {} es inicio".format(respuesta))
+	if respuesta.lower() == "inicio":
+		print("Hay inicio")
+		textoMenu = """1. Configuraciónes
+		2. Acción y
+		3. Finalizar"""
+		self.humanBehaviour(messageProtocolEntity, textoMenu, 4,logFileName)
+
+
+# Menu de opciones
+#	textoMenu = """1. Reservar turno
+#	2. Cancelar turno
+#        3. Activa/desactiva recordatorio
+#        4. Finalizar"""
+#	menuList = ["1","2","3","4"]
+#	preguntaMenu = "Qué desea hacer?"
+#	ans = respuesta in menuList
+#        if not ans:
+#    	    self.humanBehaviour(messageProtocolEntity, textoMenu, 4,logFileName)
+#	    self.humanBehaviour(messageProtocolEntity, preguntaMenu, 4,logFileName)
+#        elif respuesta == "1":
+#	    self.humanBehaviour(messageProtocolEntity, "Ok, estos son los horarios disponibles: cri cri ...", 4,logFileName)
+#        elif respuesta == "2":
+#	    self.humanBehaviour(messageProtocolEntity, "Ok, turno cancelado", 4,logFileName)
+#        elif respuesta == "3":
+#	    self.humanBehaviour(messageProtocolEntity, "Recordatorio activado/desactivado", 4,logFileName)
+#        elif respuesta == "4":
+#	    self.humanBehaviour(messageProtocolEntity, "Ok, adios.", 4,logFileName)
+#        else:
+#	    self.humanBehaviour(messageProtocolEntity, "Opción no válida", 4,logFileName)
+
+
+
 
 
     @ProtocolEntityCallback("receipt")
@@ -57,26 +106,26 @@ class AppointmentsLayer(YowInterfaceLayer):
 	##
         self.toLower(entity.ack())
 
-
-
 # Text message received, need special treatment:
     def onTextMessage(self,messageProtocolEntity):
         # just print info
+	import time #revisar
 	try:
 	   mensajeEnUTF = messageProtocolEntity.getBody().encode('utf-8')
 	   print("Repitiendo %s to %s" % (mensajeEnUTF, messageProtocolEntity.getFrom(False)))
 	   mad = ManageAppointments(messageProtocolEntity.getFrom(False))
-	   print("Ud. es un {} de {}".format(mad.accountType,mad.activity))
-	   return mensajeEnUTF
+	   print("La cuenta es {} de {}".format(mad.accountType,mad.activity))
+#	   return mensajeEnUTF
         except AttributeError as e:
 	   print(e)
 	   print("Vamo laj bandaaaa!")
-	logFileName = messageProtocolEntity.getFrom(False).encode('utf-8')+".log"
 # Abro/creo archivo para loguear conversación basado en número de celular
+        logFileName = messageProtocolEntity.getFrom(False).encode('utf-8')+".log"
+        print("Log file is: {}".format(logFileName))
         try:
 		print("Va a tratar ...")
 		with open(logFileName,'a') as file:
-			file.write(mensajeTexto+"@"+str(time.time())+"\n"
+			file.write(mensajeEnUTF+"@"+str(time.time())+"\n"
 					+json.dumps(messageProtocolEntity,default=jdefault)+"\n")
 	except IOError as e:  
 		print("File "+messageProtocolEntity.getFrom(False).encode('utf-8')+".log does not exist!") #Nunca falla, esta al dope
@@ -87,6 +136,8 @@ class AppointmentsLayer(YowInterfaceLayer):
 					+"\n"
 					+time.asctime()
 					+","+mensajeTexto)
+
+	return mensajeEnUTF
 			
 ######################################
 
@@ -156,33 +207,6 @@ class AppointmentsLayer(YowInterfaceLayer):
 	time.sleep(1)
         self.toLower(messageProtocolEntity.ack(True))
 
-# Leo el mensaje en una variable
-	respuesta = mensajeTexto
-
-# Menu de opciones
-	textoMenu = """1. Reservar turno
-	2. Cancelar turno
-        3. Activa/desactiva recordatorio
-        4. Finalizar"""
-	menuList = ["1","2","3","4"]
-	preguntaMenu = "Qué desea hacer?"
-	ans = respuesta in menuList
-        if not ans:
-    	    self.humanBehaviour(messageProtocolEntity, textoMenu, 4,logFileName)
-	    self.humanBehaviour(messageProtocolEntity, preguntaMenu, 4,logFileName)
-        elif respuesta == "1":
-	    self.humanBehaviour(messageProtocolEntity, "Ok, estos son los horarios disponibles: cri cri ...", 4,logFileName)
-        elif respuesta == "2":
-	    self.humanBehaviour(messageProtocolEntity, "Ok, turno cancelado", 4,logFileName)
-        elif respuesta == "3":
-	    self.humanBehaviour(messageProtocolEntity, "Recordatorio activado/desactivado", 4,logFileName)
-        elif respuesta == "4":
-	    self.humanBehaviour(messageProtocolEntity, "Ok, adios.", 4,logFileName)
-        else:
-	    self.humanBehaviour(messageProtocolEntity, "Opción no válida", 4,logFileName)
-
-
-
     def onMediaMessage(self, messageProtocolEntity):
         # just print info
         if messageProtocolEntity.getMediaType() == "image":
@@ -207,14 +231,17 @@ class AppointmentsLayer(YowInterfaceLayer):
 
 
 
-    def humanBehaviour(self, messageProtocolEntity, textoSalida, typingTime,logFileName):
+    def humanBehaviour(self, messageProtocolEntity, textoSalida, typingTime,fileName:
 	"""By now it only sends some "typing" signal.
 	It is expected to emulate the human behaviour
-	while writing and reading messages.
+	while writing and reading messages. It also save a log file and a message file.
 	""" 
+	import time
 	def jdefault(o):
 		return o.__dict__
 
+        logFileName = fileName+".log"
+	messagesFileName = fileName+".messages"
 	# First I create the 'Mensaje' object
 	print(textoSalida)
 	entity = OutgoingChatstateProtocolEntity(   #Mando un "escribiendo" durante "typingTime"
@@ -228,8 +255,10 @@ class AppointmentsLayer(YowInterfaceLayer):
 	time.sleep(typingTime)
 	print("Imprimo el ID del mje saliente: %s" % sendingId)
 	with open(logFileName,'a') as file: #filename
-			file.write(json.dumps(outgoingMessageProtocolEntity,default=jdefault)+"\n")
+		file.write(json.dumps(outgoingMessageProtocolEntity,default=jdefault)+"\n")
 	self.toLower(outgoingMessageProtocolEntity)
+	with (open(messagesFileName,'a') as file:
+		file.write(self.onTextMessage(messageProtocolEntity)+"\")
 	"""
 	Delivery Notification:
 	message_id 	A unique ID assigned to a message.
@@ -242,7 +271,6 @@ class AppointmentsLayer(YowInterfaceLayer):
 	from 		The sender’s phone number.
 	text 		The message’s text, in the UTF-8 character set.
 	"""
-
 
 
 
